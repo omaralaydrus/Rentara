@@ -1,0 +1,432 @@
+﻿{
+    "openapi":  "3.0.1",
+    "info":  {
+                 "title":  "license Sandbox API",
+                 "description":  "Curated sandbox surface of license. Authenticate: POST /oauth/token with HTTP Basic (client id + secret) and form fields grant_type=password\u0026username=...\u0026password=... â credentials are issued by the council administrator. Use the returned access_token as a Bearer token. Verify with GET /api/sandbox/ping. Requests are rate-limited per client; 429 responses carry {\"code\":\"SANDBOX_RATE_LIMITED\"} and a Retry-After header. These endpoints are also available as MCP tools at /api/sandbox/mcp/sse, with the same token â attach the server instead of writing HTTP code.",
+                 "version":  "1.0.0"
+             },
+    "servers":  [
+                    {
+                        "url":  "http://rebana.canang.com.my",
+                        "description":  "Generated server url"
+                    }
+                ],
+    "security":  [
+                     {
+                         "bearerAuth":  [
+
+                                        ]
+                     }
+                 ],
+    "tags":  [
+                 {
+                     "name":  "Sandbox",
+                     "description":  "Curated read-only surface for client developers and their coding agents, reachable only with a sandbox credential (Bearer JWT from POST /oauth/token). Reference-data list endpoints paginate with `offset` (first row to return, default 0) and `limit` (page size, default 50, values above 200 are clamped to 200) and return a plain JSON array â page until a call returns fewer rows than `limit`. All endpoints are rate-limited per credential; on HTTP 429 match the body\u0027s `code` == `SANDBOX_RATE_LIMITED` and retry after `retryAfterSeconds`."
+                 }
+             ],
+    "paths":  {
+                  "/api/sandbox/zones":  {
+                                             "get":  {
+                                                         "tags":  [
+                                                                      "Sandbox"
+                                                                  ],
+                                                         "summary":  "List the council\u0027s administrative zones",
+                                                         "description":  "Returns the active zones, ordered by `zoneCode`. Zones are the council\u0027s internal geographic subdivisions (the finest tier of the Parliament \u003e DUN \u003e Zone hierarchy); every application records the zone its business premise falls in, and the zone code is a segment of the application number. `dunCode` names the parent state-assembly constituency for one-level-up grouping. Boundary geometry is not exposed. Paginated with `offset`/`limit` as described on the Sandbox tag.",
+                                                         "operationId":  "list_zones",
+                                                         "parameters":  [
+                                                                            {
+                                                                                "name":  "offset",
+                                                                                "in":  "query",
+                                                                                "description":  "Index of the first row to return (0-based).",
+                                                                                "required":  false,
+                                                                                "schema":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int32",
+                                                                                               "default":  0
+                                                                                           }
+                                                                            },
+                                                                            {
+                                                                                "name":  "limit",
+                                                                                "in":  "query",
+                                                                                "description":  "Maximum rows to return; values above 200 are clamped to 200.",
+                                                                                "required":  false,
+                                                                                "schema":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int32",
+                                                                                               "default":  50
+                                                                                           }
+                                                                            }
+                                                                        ],
+                                                         "responses":  {
+                                                                           "200":  {
+                                                                                       "description":  "OK",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "type":  "array",
+                                                                                                                                  "items":  {
+                                                                                                                                                "$ref":  "#/components/schemas/SandboxZone"
+                                                                                                                                            }
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   }
+                                                                       }
+                                                     }
+                                         },
+                  "/api/sandbox/statistics":  {
+                                                  "get":  {
+                                                              "tags":  [
+                                                                           "Sandbox"
+                                                                       ],
+                                                              "summary":  "Live non-financial statistics of the licensing system",
+                                                              "description":  "Returns a single object of operational counts computed from the current database state at call time (no caching, no pagination): license/permit accounts per lifecycle status, license and permit applications per processing stage (every stage present as a key, 0 when empty), the number of active accounts expiring within the next 30 days, and the pending/completed site-inspection counts. Deliberately contains no monetary figures â revenue and enforcement amounts are not part of the sandbox surface.",
+                                                              "operationId":  "get_statistics",
+                                                              "responses":  {
+                                                                                "200":  {
+                                                                                            "description":  "OK",
+                                                                                            "content":  {
+                                                                                                            "*/*":  {
+                                                                                                                        "schema":  {
+                                                                                                                                       "$ref":  "#/components/schemas/SandboxStatistics"
+                                                                                                                                   }
+                                                                                                                    }
+                                                                                                        }
+                                                                                        }
+                                                                            }
+                                                          }
+                                              },
+                  "/api/sandbox/ping":  {
+                                            "get":  {
+                                                        "tags":  [
+                                                                     "sandbox-controller"
+                                                                 ],
+                                                        "summary":  "Sandbox smoke test",
+                                                        "description":  "Verifies the credential works. Returns the application id, the calling principal, the token\u0027s expiry, the remaining rate-limit budget for this minute, and the OpenAPI spec path (and the MCP URL, when that transport is on). Call this first after obtaining a token from POST /oauth/token.",
+                                                        "operationId":  "sandbox_ping",
+                                                        "responses":  {
+                                                                          "200":  {
+                                                                                      "description":  "OK",
+                                                                                      "content":  {
+                                                                                                      "*/*":  {
+                                                                                                                  "schema":  {
+                                                                                                                                 "$ref":  "#/components/schemas/SandboxPingVo"
+                                                                                                                             }
+                                                                                                              }
+                                                                                                  }
+                                                                                  }
+                                                                      }
+                                                    }
+                                        },
+                  "/api/sandbox/license-types":  {
+                                                     "get":  {
+                                                                 "tags":  [
+                                                                              "Sandbox"
+                                                                          ],
+                                                                 "summary":  "List the license and permit types the council offers",
+                                                                 "description":  "Returns the active license/permit types (the catalog of what a business can apply for), ordered by family then Malay name. Each type carries a stable `code` â the value to use in any correlation or filter â its bilingual names, its legal `family` (LICENSE = annually renewable, PERMIT = one-off temporary grant) and its `riskCategory` (whether external agency referrals are mandatory). Paginated with `offset`/`limit` as described on the Sandbox tag.",
+                                                                 "operationId":  "list_license_types",
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "offset",
+                                                                                        "in":  "query",
+                                                                                        "description":  "Index of the first row to return (0-based).",
+                                                                                        "required":  false,
+                                                                                        "schema":  {
+                                                                                                       "type":  "integer",
+                                                                                                       "format":  "int32",
+                                                                                                       "default":  0
+                                                                                                   }
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "limit",
+                                                                                        "in":  "query",
+                                                                                        "description":  "Maximum rows to return; values above 200 are clamped to 200.",
+                                                                                        "required":  false,
+                                                                                        "schema":  {
+                                                                                                       "type":  "integer",
+                                                                                                       "format":  "int32",
+                                                                                                       "default":  50
+                                                                                                   }
+                                                                                    }
+                                                                                ],
+                                                                 "responses":  {
+                                                                                   "200":  {
+                                                                                               "description":  "OK",
+                                                                                               "content":  {
+                                                                                                               "*/*":  {
+                                                                                                                           "schema":  {
+                                                                                                                                          "type":  "array",
+                                                                                                                                          "items":  {
+                                                                                                                                                        "$ref":  "#/components/schemas/SandboxLicenseType"
+                                                                                                                                                    }
+                                                                                                                                      }
+                                                                                                                       }
+                                                                                                           }
+                                                                                           }
+                                                                               }
+                                                             }
+                                                 },
+                  "/api/sandbox/business-activities":  {
+                                                           "get":  {
+                                                                       "tags":  [
+                                                                                    "Sandbox"
+                                                                                ],
+                                                                       "summary":  "List the business-activity taxonomy",
+                                                                       "description":  "Returns the active nodes of the council\u0027s three-tier business-activity classification (based on the national MDKT taxonomy), ordered by Malay name. Tier 1 and 2 rows are category/subcategory headers; only tier 3 rows have `selectable` = true and can actually be declared on an application. The declared activities determine which supporting documents an application must include. Paginated with `offset`/`limit` as described on the Sandbox tag.",
+                                                                       "operationId":  "list_business_activities",
+                                                                       "parameters":  [
+                                                                                          {
+                                                                                              "name":  "offset",
+                                                                                              "in":  "query",
+                                                                                              "description":  "Index of the first row to return (0-based).",
+                                                                                              "required":  false,
+                                                                                              "schema":  {
+                                                                                                             "type":  "integer",
+                                                                                                             "format":  "int32",
+                                                                                                             "default":  0
+                                                                                                         }
+                                                                                          },
+                                                                                          {
+                                                                                              "name":  "limit",
+                                                                                              "in":  "query",
+                                                                                              "description":  "Maximum rows to return; values above 200 are clamped to 200.",
+                                                                                              "required":  false,
+                                                                                              "schema":  {
+                                                                                                             "type":  "integer",
+                                                                                                             "format":  "int32",
+                                                                                                             "default":  50
+                                                                                                         }
+                                                                                          }
+                                                                                      ],
+                                                                       "responses":  {
+                                                                                         "200":  {
+                                                                                                     "description":  "OK",
+                                                                                                     "content":  {
+                                                                                                                     "*/*":  {
+                                                                                                                                 "schema":  {
+                                                                                                                                                "type":  "array",
+                                                                                                                                                "items":  {
+                                                                                                                                                              "$ref":  "#/components/schemas/SandboxBusinessActivity"
+                                                                                                                                                          }
+                                                                                                                                            }
+                                                                                                                             }
+                                                                                                                 }
+                                                                                                 }
+                                                                                     }
+                                                                   }
+                                                       }
+              },
+    "components":  {
+                       "schemas":  {
+                                       "SandboxZone":  {
+                                                           "type":  "object",
+                                                           "properties":  {
+                                                                              "zoneCode":  {
+                                                                                               "type":  "string",
+                                                                                               "description":  "Stable unique code of the zone â the value applications carry and the key to use when correlating or filtering by zone.",
+                                                                                               "example":  "Z01"
+                                                                                           },
+                                                                              "nameMs":  {
+                                                                                             "type":  "string",
+                                                                                             "description":  "Zone display name in Malay (the council\u0027s working language).",
+                                                                                             "example":  "Zon Bandar"
+                                                                                         },
+                                                                              "nameEn":  {
+                                                                                             "type":  "string",
+                                                                                             "description":  "Zone display name in English. May be null when no translation is maintained.",
+                                                                                             "nullable":  true,
+                                                                                             "example":  "Town Zone"
+                                                                                         },
+                                                                              "dunCode":  {
+                                                                                              "type":  "string",
+                                                                                              "description":  "Code of the parent DUN (Dewan Undangan Negeri â the state legislative assembly constituency the zone sits inside). Groups zones geographically one level up.",
+                                                                                              "example":  "N20"
+                                                                                          },
+                                                                              "active":  {
+                                                                                             "type":  "boolean",
+                                                                                             "description":  "Whether the zone is currently in use. The list endpoint only returns active zones, so this is always true today; included so the shape stays stable if inactive zones are ever listed.",
+                                                                                             "example":  true
+                                                                                         }
+                                                                          },
+                                                           "description":  "One administrative zone of the council area. Zones are the finest tier of the Parliament constituency \u003e DUN \u003e Zone hierarchy: internal subdivisions the council uses to assign business premises to an area, not electoral units. Every license/permit application records the zone its premise falls in, and the zone code appears as a segment of the application number."
+                                                       },
+                                       "SandboxStatistics":  {
+                                                                 "type":  "object",
+                                                                 "properties":  {
+                                                                                    "credentialStatusCounts":  {
+                                                                                                                   "type":  "object",
+                                                                                                                   "additionalProperties":  {
+                                                                                                                                                "type":  "integer",
+                                                                                                                                                "description":  "Count of license/permit accounts (credentials) per lifecycle status. Keys are always all of: INACTIVE (account opened at intake, nothing approved yet), ACTIVE (currently valid), EXPIRED (validity ended, not renewed), CANCELLED, BLACKLISTED, REJECTED (first application rejected, account never activated). Statuses with no accounts are present with value 0.",
+                                                                                                                                                "format":  "int32"
+                                                                                                                                            },
+                                                                                                                   "description":  "Count of license/permit accounts (credentials) per lifecycle status. Keys are always all of: INACTIVE (account opened at intake, nothing approved yet), ACTIVE (currently valid), EXPIRED (validity ended, not renewed), CANCELLED, BLACKLISTED, REJECTED (first application rejected, account never activated). Statuses with no accounts are present with value 0."
+                                                                                                               },
+                                                                                    "licenseApplicationStageCounts":  {
+                                                                                                                          "type":  "object",
+                                                                                                                          "additionalProperties":  {
+                                                                                                                                                       "type":  "integer",
+                                                                                                                                                       "description":  "Count of license applications per processing stage. A license application moves through: APPLICATION (intake), COMPLETENESS_CHECK (document checklist gate), INSPECTION_AND_REFERRAL (site inspection plus agency referrals, run in parallel), MJKKTP (tabled at the technical sub-committee), MJKPP (tabled at the licensing and business committee), PAYMENT (approved, awaiting payment), COMPLETED (done â promoted to an active account), plus DEFERRED (sent back by a committee for rework) and REJECTED (terminal). Every stage is present as a key; empty stages carry 0.",
+                                                                                                                                                       "format":  "int32"
+                                                                                                                                                   },
+                                                                                                                          "description":  "Count of license applications per processing stage. A license application moves through: APPLICATION (intake), COMPLETENESS_CHECK (document checklist gate), INSPECTION_AND_REFERRAL (site inspection plus agency referrals, run in parallel), MJKKTP (tabled at the technical sub-committee), MJKPP (tabled at the licensing and business committee), PAYMENT (approved, awaiting payment), COMPLETED (done â promoted to an active account), plus DEFERRED (sent back by a committee for rework) and REJECTED (terminal). Every stage is present as a key; empty stages carry 0."
+                                                                                                                      },
+                                                                                    "permitApplicationStageCounts":  {
+                                                                                                                         "type":  "object",
+                                                                                                                         "additionalProperties":  {
+                                                                                                                                                      "type":  "integer",
+                                                                                                                                                      "description":  "Count of permit applications per processing stage. Permits are one-off temporary grants with a lighter pipeline than licenses â no committee tabling and no deferral loop: APPLICATION (intake), DOCUMENT_CHECK, SITE_VERIFICATION, PAYMENT, COMPLETED, REJECTED. Every stage is present as a key; empty stages carry 0.",
+                                                                                                                                                      "format":  "int32"
+                                                                                                                                                  },
+                                                                                                                         "description":  "Count of permit applications per processing stage. Permits are one-off temporary grants with a lighter pipeline than licenses â no committee tabling and no deferral loop: APPLICATION (intake), DOCUMENT_CHECK, SITE_VERIFICATION, PAYMENT, COMPLETED, REJECTED. Every stage is present as a key; empty stages carry 0."
+                                                                                                                     },
+                                                                                    "expiringSoonCount":  {
+                                                                                                              "type":  "integer",
+                                                                                                              "description":  "Number of currently ACTIVE license/permit accounts whose validity ends within the next 30 days â the renewal workload coming due.",
+                                                                                                              "format":  "int32",
+                                                                                                              "example":  12
+                                                                                                          },
+                                                                                    "inspectionPendingCount":  {
+                                                                                                                   "type":  "integer",
+                                                                                                                   "description":  "Number of scheduled site inspections not yet completed â the field officers\u0027 open backlog.",
+                                                                                                                   "format":  "int32",
+                                                                                                                   "example":  7
+                                                                                                               },
+                                                                                    "inspectionCompletedCount":  {
+                                                                                                                     "type":  "integer",
+                                                                                                                     "description":  "Number of site inspections already completed (all-time).",
+                                                                                                                     "format":  "int32",
+                                                                                                                     "example":  154
+                                                                                                                 }
+                                                                                },
+                                                                 "description":  "Live, non-financial operational counts across the council\u0027s licensing system, computed from the current database state at call time (no caching). Gives a client application enough to render workload/health overviews: how many license and permit accounts exist per lifecycle status, how many applications sit at each processing stage, how many licenses expire soon and the inspection backlog. Contains no monetary amounts by design."
+                                                             },
+                                       "SandboxPingVo":  {
+                                                             "type":  "object",
+                                                             "properties":  {
+                                                                                "app":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                                "principal":  {
+                                                                                                  "type":  "string"
+                                                                                              },
+                                                                                "sandbox":  {
+                                                                                                "type":  "boolean"
+                                                                                            },
+                                                                                "tokenExpiresAt":  {
+                                                                                                       "type":  "string",
+                                                                                                       "format":  "date-time"
+                                                                                                   },
+                                                                                "rateLimitPerMinute":  {
+                                                                                                           "type":  "integer",
+                                                                                                           "format":  "int32"
+                                                                                                       },
+                                                                                "rateLimitRemaining":  {
+                                                                                                           "type":  "integer",
+                                                                                                           "format":  "int32"
+                                                                                                       },
+                                                                                "spec":  {
+                                                                                             "type":  "string"
+                                                                                         },
+                                                                                "mcp":  {
+                                                                                            "type":  "string"
+                                                                                        }
+                                                                            }
+                                                         },
+                                       "SandboxLicenseType":  {
+                                                                  "type":  "object",
+                                                                  "properties":  {
+                                                                                     "code":  {
+                                                                                                  "type":  "string",
+                                                                                                  "description":  "Stable unique identifier of the type. Use this code â never the display names â when referring to a type in other calls or when correlating data; names may be reworded, codes never change.",
+                                                                                                  "example":  "BUSINESS_LICENSE"
+                                                                                              },
+                                                                                     "name":  {
+                                                                                                  "type":  "string",
+                                                                                                  "description":  "Display name in Malay (the council\u0027s working language).",
+                                                                                                  "example":  "Lesen Perniagaan"
+                                                                                              },
+                                                                                     "nameEn":  {
+                                                                                                    "type":  "string",
+                                                                                                    "description":  "Display name in English. May be null when no translation is maintained.",
+                                                                                                    "nullable":  true,
+                                                                                                    "example":  "Business License"
+                                                                                                },
+                                                                                     "family":  {
+                                                                                                    "type":  "string",
+                                                                                                    "description":  "Base legal category of the type, one of: LICENSE â an annually renewable license account (Malay: Lesen) that goes through the full processing pipeline including committee review; PERMIT â a one-off, temporary grant (Malay: Permit, e.g. banners, tables and chairs) with a lighter pipeline and a fixed validity window instead of yearly renewal.",
+                                                                                                    "example":  "LICENSE",
+                                                                                                    "enum":  [
+                                                                                                                 "LICENSE",
+                                                                                                                 "PERMIT"
+                                                                                                             ]
+                                                                                                },
+                                                                                     "riskCategory":  {
+                                                                                                          "type":  "string",
+                                                                                                          "description":  "Risk classification driving which external agency referrals are mandatory during processing, one of: HIGH_RISK (Malay: Berisiko Tinggi) â referrals to supporting agencies are compulsory; NOT_HIGH_RISK (Malay: Tidak Berisiko Tinggi). Null when the type is not classified.",
+                                                                                                          "nullable":  true,
+                                                                                                          "example":  "NOT_HIGH_RISK",
+                                                                                                          "enum":  [
+                                                                                                                       "HIGH_RISK",
+                                                                                                                       "NOT_HIGH_RISK"
+                                                                                                                   ]
+                                                                                                      },
+                                                                                     "active":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "description":  "Whether the type is currently offered. The list endpoint only returns active types, so this is always true today; it is included so the shape stays stable if inactive types are ever listed.",
+                                                                                                    "example":  true
+                                                                                                }
+                                                                                 },
+                                                                  "description":  "One license or permit type offered by the council â the activity-level category a business applies under (e.g. a standard business license, a hawker license, a banner permit). This is reference data: the catalog of what can be applied for, not an application itself."
+                                                              },
+                                       "SandboxBusinessActivity":  {
+                                                                       "type":  "object",
+                                                                       "properties":  {
+                                                                                          "code":  {
+                                                                                                       "type":  "string",
+                                                                                                       "description":  "Stable unique code of the activity node â the key to use when correlating or filtering; display names may be reworded, codes never change.",
+                                                                                                       "example":  "F-01-03"
+                                                                                                   },
+                                                                                          "name":  {
+                                                                                                       "type":  "string",
+                                                                                                       "description":  "Activity name in Malay (the council\u0027s working language).",
+                                                                                                       "example":  "Kedai Makan"
+                                                                                                   },
+                                                                                          "nameEn":  {
+                                                                                                         "type":  "string",
+                                                                                                         "description":  "Activity name in English. May be null when no translation is maintained.",
+                                                                                                         "nullable":  true,
+                                                                                                         "example":  "Restaurant"
+                                                                                                     },
+                                                                                          "tier":  {
+                                                                                                       "maximum":  3,
+                                                                                                       "minimum":  1,
+                                                                                                       "type":  "integer",
+                                                                                                       "description":  "Depth of the node in the taxonomy: 1 = top-level category, 2 = subcategory, 3 = leaf activity. Only leaves are declarable on an application.",
+                                                                                                       "format":  "int32",
+                                                                                                       "example":  3
+                                                                                                   },
+                                                                                          "selectable":  {
+                                                                                                             "type":  "boolean",
+                                                                                                             "description":  "True only for tier-3 leaf rows â the activities a business can actually declare on an application. Tier-1/2 rows are grouping headers for guided pickers, never declared directly.",
+                                                                                                             "example":  true
+                                                                                                         },
+                                                                                          "active":  {
+                                                                                                         "type":  "boolean",
+                                                                                                         "description":  "Whether the node is currently part of the taxonomy. The list endpoint only returns active nodes, so this is always true today; included so the shape stays stable if inactive nodes are ever listed.",
+                                                                                                         "example":  true
+                                                                                                     }
+                                                                                      },
+                                                                       "description":  "One node of the council\u0027s business-activity taxonomy â the classification tree (based on the national MDKT taxonomy) that describes what a business actually does. It is a three-tier hierarchy: tier 1 rows are top-level categories, tier 2 rows are subcategories, and tier 3 rows are the concrete activities an application actually declares. The declared activities drive which supporting documents an application must provide."
+                                                                   }
+                                   },
+                       "securitySchemes":  {
+                                               "bearerAuth":  {
+                                                                  "type":  "http",
+                                                                  "scheme":  "bearer",
+                                                                  "bearerFormat":  "JWT"
+                                                              }
+                                           }
+                   }
+}
